@@ -1,0 +1,80 @@
+{
+  "normalization": {
+    "minReferenceScore": 0.0022,
+    "maxReferenceScore": 0.2177
+  },
+  "results": [
+    {
+      "zoneSlug": "taganrog_bay",
+      "year": 2020,
+      "NDVI": -0.175,
+      "NDWI": 0.427,
+      "NDBI": -0.524,
+      "rawScore": 0.1900,
+      "normalized": 0.872,
+      "class": "благоприятное",
+      "sceneId": "S2B_37TEN_20200831_1_L2A",
+      "sceneDate": "2020-08-31"
+    },
+    {
+      "zoneSlug": "taganrog_bay",
+      "year": 2025,
+      "NDVI": -0.085,
+      "NDWI": 0.300,
+      "NDBI": -0.560,
+      "rawScore": 0.2177,
+      "normalized": 1.000,
+      "class": "благоприятное",
+      "sceneId": "S2A_37TEN_20250829_0_L2A",
+      "sceneDate": "2025-08-29"
+    },
+    {
+      "zoneSlug": "rostov_on_don",
+      "year": 2020,
+      "NDVI": 0.488,
+      "NDWI": -0.468,
+      "NDBI": -0.104,
+      "rawScore": 0.1625,
+      "normalized": 0.744,
+      "class": "удовлетворительное",
+      "sceneId": "S2B_37TEN_20200719_1_L2A",
+      "sceneDate": "2020-07-19"
+    },
+    {
+      "zoneSlug": "rostov_on_don",
+      "year": 2025,
+      "NDVI": 0.363,
+      "NDWI": -0.397,
+      "NDBI": 0.021,
+      "rawScore": 0.0766,
+      "normalized": 0.345,
+      "class": "напряженное",
+      "sceneId": "S2A_37TEN_20250829_0_L2A",
+      "sceneDate": "2025-08-29"
+    },
+    {
+      "zoneSlug": "shakhty",
+      "year": 2020,
+      "NDVI": 0.440,
+      "NDWI": -0.465,
+      "NDBI": -0.051,
+      "rawScore": 0.1225,
+      "normalized": 0.558,
+      "class": "удовлетворительное",
+      "sceneId": "S2A_37TEN_20200724_0_L2A",
+      "sceneDate": "2020-07-24"
+    },
+    {
+      "zoneSlug": "shakhty",
+      "year": 2025,
+      "NDVI": 0.298,
+      "NDWI": -0.378,
+      "NDBI": 0.161,
+      "rawScore": 0.0022,
+      "normalized": 0.000,
+      "class": "проблемное",
+      "sceneId": "S2A_37UFP_20250819_1_L2A",
+      "sceneDate": "2025-08-19"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "geoeco-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GeoEco Monitor: публичный аналитический дашборд дистанционной экологической оценки по Sentinel-2.",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "lint": "npm --workspace apps/web run lint",
+    "build": "npm --workspace apps/web run build",
+    "test": "npm --workspace apps/web run test",
+    "check": "node scripts/check.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+}
