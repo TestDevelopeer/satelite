@@ -39,6 +39,7 @@ def _base_profile(profile: dict[str, Any]) -> dict[str, Any]:
         "blockxsize": 256,
         "blockysize": 256,
         "compress": "lzw",
+        "bigtiff": "IF_SAFER",
     }
 
 
@@ -52,10 +53,15 @@ def _save_float_layer(
     path = output_dir / f"{layer}.tif"
     data = np.where(np.isfinite(raster), raster, FLOAT_NODATA).astype("float32")
     write_profile = _base_profile(profile)
-    write_profile.update({"count": 1, "dtype": "float32", "nodata": FLOAT_NODATA})
+    write_profile.update({"count": 1, "dtype": "float32", "nodata": FLOAT_NODATA, "predictor": 3})
 
     with rasterio.open(path, "w", **write_profile) as dataset:
         dataset.write(data, 1)
+        dataset.update_tags(
+            AREA_OR_POINT="Area",
+            GEOECO_LAYER=layer,
+            GEOECO_OUTPUT="tiled-compressed-geotiff",
+        )
 
     valid = raster[np.isfinite(raster)]
     return _metadata_from_file(
@@ -76,10 +82,15 @@ def _save_rgb_layer(
 ) -> RasterAsset:
     path = output_dir / "rgb.tif"
     write_profile = _base_profile(profile)
-    write_profile.update({"count": 4, "dtype": "uint8", "nodata": None})
+    write_profile.update({"count": 4, "dtype": "uint8", "nodata": None, "predictor": 2})
 
     with rasterio.open(path, "w", **write_profile) as dataset:
         dataset.write(raster.astype("uint8"))
+        dataset.update_tags(
+            AREA_OR_POINT="Area",
+            GEOECO_LAYER="rgb",
+            GEOECO_OUTPUT="tiled-compressed-geotiff",
+        )
 
     return _metadata_from_file(
         analysis_id=analysis_id,

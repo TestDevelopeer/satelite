@@ -1,0 +1,19 @@
+{
+	admin off
+}
+
+{$PUBLIC_DOMAIN::80} {
+	encode zstd gzip
+
+	handle /health {
+		reverse_proxy api:8000
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

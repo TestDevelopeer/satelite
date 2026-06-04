@@ -1,7 +1,7 @@
 "use client";
 
 import maplibregl from "maplibre-gl";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { absoluteTileUrl, type RasterLayer, type ZoneFeature } from "@/lib/api";
 
 const MAP_STYLE =
@@ -13,7 +13,8 @@ export function ZoneMap({
   opacity,
   selectedLayer,
   availableLayers,
-  onLayerChange
+  onLayerChange,
+  statusText
 }: {
   zone: ZoneFeature | undefined;
   rasterLayer: RasterLayer | undefined;
@@ -21,9 +22,24 @@ export function ZoneMap({
   selectedLayer: RasterLayer["layer"];
   availableLayers: RasterLayer["layer"][];
   onLayerChange: (layer: RasterLayer["layer"]) => void;
+  statusText: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+
+  const fitToZone = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !zone) {
+      return;
+    }
+    map.fitBounds(
+      [
+        [zone.bbox[0], zone.bbox[1]],
+        [zone.bbox[2], zone.bbox[3]]
+      ],
+      { padding: 80, duration: 700 }
+    );
+  }, [zone]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -88,13 +104,7 @@ export function ZoneMap({
         });
       }
 
-      map.fitBounds(
-        [
-          [zone.bbox[0], zone.bbox[1]],
-          [zone.bbox[2], zone.bbox[3]]
-        ],
-        { padding: 80, duration: 700 }
-      );
+      fitToZone();
     };
 
     if (map.isStyleLoaded()) {
@@ -102,7 +112,7 @@ export function ZoneMap({
     } else {
       map.once("load", updateZone);
     }
-  }, [zone]);
+  }, [fitToZone, zone]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -163,8 +173,14 @@ export function ZoneMap({
             </button>
           ))}
         </div>
-        <div className="map-caption">Методическая bbox-зона WGS84</div>
+        <div className="map-actions">
+          <button className="map-action-button" disabled={!zone} onClick={fitToZone} type="button">
+            К зоне
+          </button>
+          <div className="map-caption">Методическая bbox-зона WGS84</div>
+        </div>
       </div>
+      <div className={`map-status ${rasterLayer ? "ready" : "empty"}`}>{statusText}</div>
       <div ref={containerRef} className="map-container" />
     </div>
   );

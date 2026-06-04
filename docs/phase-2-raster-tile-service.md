@@ -145,7 +145,11 @@ DevTools console во время проверки показал только de
 - Outputs пока GeoTIFF, не COG; структура подготовлена так, чтобы позже заменить writer на COG.
 - RGB layer — визуальный RGBA preview с percentile stretch, не полноценная radiometric RGB product.
 - Score/integral raster layer пока не реализован.
-- Coverage metrics для выбранной сцены еще не добавлены.
+- Coverage metrics для выбранной сцены еще не добавлены в Phase 2; это закрывается в Phase 2.1.
+
+## Phase 2.1 note
+
+Промежуточный этап `Phase 2.1 — Raster Map Stabilization + Demo Readiness` добавляет coverage metrics, tile cache, favicon/accessibility cleanup и FastAPI lifespan. См. `docs/phase-2-1-raster-map-stabilization.md`.
 
 ## Следующий этап
 

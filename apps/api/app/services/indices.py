@@ -21,4 +21,5 @@ def ndbi(swir: np.ndarray, nir: np.ndarray) -> np.ndarray:
 
 def scl_valid_mask(scl: np.ndarray) -> np.ndarray:
     invalid_classes = np.array([0, 1, 3, 8, 9, 10, 11])
-    return ~np.isin(scl.astype("int16"), invalid_classes)
+    scl_int = np.where(np.isfinite(scl), scl, -1).astype("int16")
+    return ~np.isin(scl_int, invalid_classes)

@@ -16,5 +16,7 @@ data/rasters/
 data/reports/
 data/cache/
 data/*.db
+data/*.log
+data/chrome-*/
 *.sqlite
 *.sqlite3

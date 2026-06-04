@@ -1,9 +1,11 @@
+import warnings
 from datetime import date
 from pathlib import Path
 
 import numpy as np
 import rasterio
 from fastapi.testclient import TestClient
+from rasterio.errors import NotGeoreferencedWarning
 from rasterio.transform import from_origin
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,8 +13,15 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.main import app
-from app.models.analysis import AnalysisJob, AnalysisResult, RasterAsset
+from app.models.analysis import (
+    AnalysisJob,
+    AnalysisResult,
+    CoverageMetrics,
+    RasterAsset,
+    SceneMetadata,
+)
 from app.services.colorize import colorize_index
+from app.services.tiles import get_cached_or_rendered_tile_png
 
 
 def test_colorizer_handles_nan_and_nodata() -> None:
@@ -64,6 +73,29 @@ def test_tile_endpoint_and_raster_metadata(tmp_path: Path) -> None:
         )
     )
     db.add(
+        SceneMetadata(
+            analysis_id="analysis-test",
+            stac_item_id="S2B_T37TEN_20200719T081640_L2A",
+            collection="sentinel-2-c1-l2a",
+            datetime="2020-07-19T08:26:57.192000Z",
+            cloud_cover=0.1,
+            tile_id="37TEN",
+            asset_urls_used="{}",
+            reference_scene_id="S2B_37TEN_20200719_1_L2A",
+            reference_scene_found=0,
+            reference_note="Выбрана сцена, совпадающая с датой и тайлом дипломной reference-сцены.",
+            thesis_reference_id="S2B_37TEN_20200719_1_L2A",
+            reference_date="2020-07-19",
+            reference_tile="37TEN",
+            reference_match_status="same_date_tile",
+            scene_selection_reason=(
+                "Выбрана сцена, совпадающая с датой и тайлом дипломной reference-сцены."
+            ),
+            candidate_count=3,
+            top_candidates_json="[]",
+        )
+    )
+    db.add(
         AnalysisResult(
             analysis_id="analysis-test",
             mean_ndvi=0.35,
@@ -77,6 +109,20 @@ def test_tile_endpoint_and_raster_metadata(tmp_path: Path) -> None:
             normalized_score=0.5,
             class_label="удовлетворительное",
             interpretation="Тестовая предварительная дистанционная оценка.",
+        )
+    )
+    db.add(
+        CoverageMetrics(
+            analysis_id="analysis-test",
+            zone_area_sq_km=100.0,
+            raster_coverage_ratio=0.9,
+            valid_pixel_ratio=0.75,
+            masked_pixel_ratio=0.25,
+            cloud_masked_pixel_ratio=0.1,
+            nodata_pixel_ratio=0.05,
+            selected_scene_intersects_zone=1,
+            coverage_warning=None,
+            method_note="Тестовая методика расчета coverage.",
         )
     )
     db.add(
@@ -120,5 +166,96 @@ def test_tile_endpoint_and_raster_metadata(tmp_path: Path) -> None:
         layers = result.json()["rasterLayers"]
         assert layers[0]["layer"] == "ndvi"
         assert layers[0]["tileUrl"] == "/api/tiles/analysis-test/ndvi/{z}/{x}/{y}.png"
+        coverage = result.json()["coverage"]
+        assert coverage["rasterCoverageRatio"] == 0.9
+        assert coverage["selectedSceneIntersectsZone"] is True
+        scene = result.json()["scene"]
+        assert scene["referenceMatchStatus"] == "same_date_tile"
+        assert scene["sceneSelectionReason"].startswith("Выбрана сцена")
+        assert scene["candidateCount"] == 3
     finally:
         app.dependency_overrides.clear()
+
+
+def test_tile_cache_hit_and_miss(tmp_path: Path) -> None:
+    raster_path = tmp_path / "ndvi.tif"
+    with rasterio.open(
+        raster_path,
+        "w",
+        driver="GTiff",
+        height=16,
+        width=16,
+        count=1,
+        dtype="float32",
+        crs="EPSG:4326",
+        transform=from_origin(0, 1, 0.05, 0.05),
+        nodata=-9999.0,
+    ) as dataset:
+        dataset.write(np.full((16, 16), 0.35, dtype="float32"), 1)
+
+    cache_dir = tmp_path / "cache"
+    rendered = get_cached_or_rendered_tile_png(
+        analysis_id="analysis-test",
+        path=str(raster_path),
+        layer="ndvi",
+        z=0,
+        x=0,
+        y=0,
+        nodata=-9999.0,
+        cache_dir=cache_dir,
+        cache_enabled=True,
+    )
+    cache_path = cache_dir / "analysis-test" / "ndvi" / "0" / "0" / "0.png"
+    assert rendered.startswith(b"\x89PNG")
+    assert cache_path.exists()
+
+    cache_path.write_bytes(b"CACHED")
+    cached = get_cached_or_rendered_tile_png(
+        analysis_id="analysis-test",
+        path=str(raster_path),
+        layer="ndvi",
+        z=0,
+        x=0,
+        y=0,
+        nodata=-9999.0,
+        cache_dir=cache_dir,
+        cache_enabled=True,
+    )
+    assert cached == b"CACHED"
+
+
+def test_tile_renderer_does_not_warn_for_georeferenced_raster(tmp_path: Path) -> None:
+    raster_path = tmp_path / "ndvi.tif"
+    with rasterio.open(
+        raster_path,
+        "w",
+        driver="GTiff",
+        height=16,
+        width=16,
+        count=1,
+        dtype="float32",
+        crs="EPSG:4326",
+        transform=from_origin(39.5, 47.3, 0.01, 0.01),
+        nodata=-9999.0,
+    ) as dataset:
+        dataset.write(np.full((16, 16), 0.35, dtype="float32"), 1)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        rendered = get_cached_or_rendered_tile_png(
+            analysis_id="analysis-test",
+            path=str(raster_path),
+            layer="ndvi",
+            z=8,
+            x=156,
+            y=89,
+            nodata=-9999.0,
+            cache_dir=tmp_path / "cache",
+            cache_enabled=False,
+        )
+
+    assert rendered.startswith(b"\x89PNG")
+    georef_warnings = [
+        warning for warning in caught if issubclass(warning.category, NotGeoreferencedWarning)
+    ]
+    assert not georef_warnings

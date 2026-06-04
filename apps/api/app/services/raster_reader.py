@@ -10,6 +10,7 @@ from shapely.geometry import shape
 
 from app.services.indices import ndbi, ndvi, ndwi, scl_valid_mask
 from app.services.scoring import build_interpretation, class_label, normalized_score, raw_score
+from app.services.zones import geometry_area_sq_km
 
 
 def _window_for_geometry(dataset: Any, geometry: dict[str, Any]) -> Any:
@@ -94,9 +95,19 @@ def calculate_indices_from_assets(
         invert=True,
         all_touched=False,
     )
-    valid = geom_mask & np.isfinite(scl) & scl_valid_mask(scl)
-    valid &= np.isfinite(red) & np.isfinite(blue) & np.isfinite(green)
-    valid &= np.isfinite(nir) & np.isfinite(swir)
+    spectral_finite = (
+        np.isfinite(red)
+        & np.isfinite(blue)
+        & np.isfinite(green)
+        & np.isfinite(nir)
+        & np.isfinite(swir)
+    )
+    scl_finite = np.isfinite(scl)
+    scl_int = np.where(scl_finite, scl, -1).astype("int16")
+    nodata_mask = geom_mask & (~spectral_finite | ~scl_finite | np.isin(scl_int, [0, 1]))
+    cloud_mask = geom_mask & scl_finite & np.isin(scl_int, [3, 8, 9, 10, 11])
+
+    valid = geom_mask & scl_finite & scl_valid_mask(scl) & spectral_finite
 
     ndvi_array = ndvi(nir, red)
     ndwi_array = ndwi(green, nir)
@@ -107,6 +118,13 @@ def calculate_indices_from_assets(
     valid_pixels = int(np.count_nonzero(valid))
     if total_pixels == 0 or valid_pixels == 0:
         raise RuntimeError("После маскирования не осталось валидных пикселей для расчета.")
+    coverage_metrics = build_coverage_metrics(
+        geometry=geometry,
+        total_pixels=total_pixels,
+        valid_pixels=valid_pixels,
+        nodata_pixels=int(np.count_nonzero(nodata_mask)),
+        cloud_pixels=int(np.count_nonzero(cloud_mask)),
+    )
 
     mean_ndvi = float(np.nanmean(ndvi_array[valid]))
     mean_ndwi = float(np.nanmean(ndwi_array[valid]))
@@ -144,6 +162,7 @@ def calculate_indices_from_assets(
             "ndbi": ndbi_output,
             "rgb": rgb_output,
         },
+        "coverage": coverage_metrics,
         "profile": profile,
     }
 
@@ -186,3 +205,42 @@ def _stretch_to_uint8(values: np.ndarray, valid: np.ndarray) -> np.ndarray:
     stretched = (values - low) / (high - low)
     output[valid] = np.clip(stretched[valid] * 255, 0, 255).astype("uint8")
     return output
+
+
+def build_coverage_metrics(
+    *,
+    geometry: dict[str, Any],
+    total_pixels: int,
+    valid_pixels: int,
+    nodata_pixels: int,
+    cloud_pixels: int,
+) -> dict[str, Any]:
+    valid_ratio = valid_pixels / total_pixels
+    nodata_ratio = nodata_pixels / total_pixels
+    cloud_ratio = cloud_pixels / total_pixels
+    coverage_ratio = max(0.0, min(1.0, 1.0 - nodata_ratio))
+    masked_ratio = max(0.0, min(1.0, 1.0 - valid_ratio))
+
+    warnings: list[str] = []
+    if coverage_ratio < 0.9:
+        warnings.append("покрытие зоны выбранной сценой неполное")
+    if valid_ratio < 0.5:
+        warnings.append("доля валидных пикселей снижена")
+    if cloud_ratio > 0.2:
+        warnings.append("значительная часть зоны закрыта облаками или тенями по SCL")
+
+    return {
+        "zone_area_sq_km": geometry_area_sq_km(geometry),
+        "raster_coverage_ratio": coverage_ratio,
+        "valid_pixel_ratio": valid_ratio,
+        "masked_pixel_ratio": masked_ratio,
+        "cloud_masked_pixel_ratio": cloud_ratio,
+        "nodata_pixel_ratio": nodata_ratio,
+        "selected_scene_intersects_zone": coverage_ratio > 0,
+        "coverage_warning": "; ".join(warnings) if warnings else None,
+        "method_note": (
+            "Метрики рассчитаны по пикселям внутри методической геометрии зоны. "
+            "Nodata оценивается по отсутствию значений каналов и SCL classes 0/1; "
+            "cloud mask использует SCL classes 3, 8, 9, 10, 11."
+        ),
+    }

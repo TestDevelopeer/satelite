@@ -33,6 +33,16 @@ def find_reference(zone_slug: str, year: int) -> dict[str, Any] | None:
     )
 
 
+def geometry_area_sq_km(geometry: dict[str, Any]) -> float:
+    geom = shape(geometry)
+    centroid = geom.centroid
+    utm_zone = int((centroid.x + 180) // 6) + 1
+    epsg = 32600 + utm_zone if centroid.y >= 0 else 32700 + utm_zone
+    transformer = Transformer.from_crs(CRS.from_epsg(4326), CRS.from_epsg(epsg), always_xy=True)
+    projected = transform(transformer.transform, geom)
+    return projected.area / 1_000_000
+
+
 def validate_geometry_area(geometry: dict[str, Any]) -> None:
     geom = shape(geometry)
     if geom.geom_type not in {"Polygon", "MultiPolygon"}:
@@ -42,12 +52,7 @@ def validate_geometry_area(geometry: dict[str, Any]) -> None:
     if geom.is_empty:
         raise ValueError("Геометрия зоны пустая.")
 
-    centroid = geom.centroid
-    utm_zone = int((centroid.x + 180) // 6) + 1
-    epsg = 32600 + utm_zone if centroid.y >= 0 else 32700 + utm_zone
-    transformer = Transformer.from_crs(CRS.from_epsg(4326), CRS.from_epsg(epsg), always_xy=True)
-    projected = transform(transformer.transform, geom)
-    area_km2 = projected.area / 1_000_000
+    area_km2 = geometry_area_sq_km(geometry)
 
     settings = get_settings()
     if area_km2 > settings.max_zone_area_km2:

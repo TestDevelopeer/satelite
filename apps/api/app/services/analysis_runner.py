@@ -7,7 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.database import SessionLocal
-from app.models.analysis import AnalysisJob, AnalysisResult, RasterAsset, SceneMetadata
+from app.models.analysis import (
+    AnalysisJob,
+    AnalysisResult,
+    CoverageMetrics,
+    RasterAsset,
+    SceneMetadata,
+)
 from app.services.zones import validate_geometry_area
 
 
@@ -98,12 +104,14 @@ def run_analysis_job(analysis_id: str, cloud_cover_max: float) -> None:
 
         calculation = calculate_indices_from_assets(assets, geometry)
         stats = calculation["stats"]
+        coverage = calculation["coverage"]
 
         update_job(db, job, status="running", progress=82, stage="расчет статистики")
         metadata = scene_metadata(item, assets, reference_note)
 
         db.merge(SceneMetadata(analysis_id=analysis_id, **_metadata_to_model(metadata)))
         db.merge(AnalysisResult(analysis_id=analysis_id, **stats))
+        db.merge(CoverageMetrics(analysis_id=analysis_id, **_coverage_to_model(coverage)))
         db.commit()
 
         update_job(db, job, status="running", progress=88, stage="сохранение растров")
@@ -123,6 +131,7 @@ def run_analysis_job(analysis_id: str, cloud_cover_max: float) -> None:
             {
                 "scene": metadata,
                 "stats": stats,
+                "coverage": coverage,
                 "rasterLayers": [_raster_to_artifact(asset) for asset in raster_assets],
             },
         )
@@ -153,6 +162,27 @@ def _metadata_to_model(metadata: dict[str, Any]) -> dict[str, Any]:
         "reference_scene_id": metadata["reference_scene_id"],
         "reference_scene_found": metadata["reference_scene_found"],
         "reference_note": metadata["reference_note"],
+        "thesis_reference_id": metadata["thesis_reference_id"],
+        "reference_date": metadata["reference_date"],
+        "reference_tile": metadata["reference_tile"],
+        "reference_match_status": metadata["reference_match_status"],
+        "scene_selection_reason": metadata["scene_selection_reason"],
+        "candidate_count": metadata["candidate_count"],
+        "top_candidates_json": json.dumps(metadata["top_candidates"], ensure_ascii=False),
+    }
+
+
+def _coverage_to_model(coverage: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "zone_area_sq_km": coverage["zone_area_sq_km"],
+        "raster_coverage_ratio": coverage["raster_coverage_ratio"],
+        "valid_pixel_ratio": coverage["valid_pixel_ratio"],
+        "masked_pixel_ratio": coverage["masked_pixel_ratio"],
+        "cloud_masked_pixel_ratio": coverage["cloud_masked_pixel_ratio"],
+        "nodata_pixel_ratio": coverage["nodata_pixel_ratio"],
+        "selected_scene_intersects_zone": int(coverage["selected_scene_intersects_zone"]),
+        "coverage_warning": coverage["coverage_warning"],
+        "method_note": coverage["method_note"],
     }
 
 

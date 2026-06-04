@@ -3,6 +3,9 @@ uvicorn[standard]==0.34.0
 pydantic==2.10.4
 pydantic-settings==2.7.1
 sqlalchemy==2.0.36
+psycopg[binary]==3.2.3
+redis==5.2.1
+rq==2.0.0
 pystac-client==0.8.5
 rasterio==1.4.3
 numpy==2.2.1
@@ -10,5 +13,6 @@ Pillow==11.1.0
 shapely==2.0.6
 pyproj==3.7.0
 httpx==0.28.1
+playwright==1.49.1
 pytest==8.3.4
 ruff==0.8.4

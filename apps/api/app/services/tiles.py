@@ -14,6 +14,31 @@ WEB_MERCATOR_HALF_WORLD = 20037508.342789244
 TILE_SIZE = 256
 
 
+def get_cached_or_rendered_tile_png(
+    *,
+    analysis_id: str,
+    path: str,
+    layer: str,
+    z: int,
+    x: int,
+    y: int,
+    nodata: float | None,
+    cache_dir: Path,
+    cache_enabled: bool,
+) -> bytes:
+    cache_path = cache_dir / analysis_id / layer / str(z) / str(x) / f"{y}.png"
+    if cache_enabled and cache_path.exists():
+        return cache_path.read_bytes()
+
+    tile = render_tile_png(path, layer, z, x, y, nodata)
+    if cache_enabled:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = cache_path.with_suffix(".tmp")
+        temporary_path.write_bytes(tile)
+        temporary_path.replace(cache_path)
+    return tile
+
+
 def render_tile_png(path: str, layer: str, z: int, x: int, y: int, nodata: float | None) -> bytes:
     raster_path = Path(path)
     if not raster_path.exists():

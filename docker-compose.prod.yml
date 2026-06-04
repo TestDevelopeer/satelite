@@ -1,0 +1,158 @@
+services:
+  proxy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      PUBLIC_DOMAIN: "${PUBLIC_DOMAIN:-:80}"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_BASE_URL: ""
+      NEXT_PUBLIC_MAP_STYLE_URL: "${NEXT_PUBLIC_MAP_STYLE_URL:-https://demotiles.maplibre.org/style.json}"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      JOB_EXECUTION_MODE: rq
+      DATABASE_URL: "${DATABASE_URL:-postgresql+psycopg://geoeco:change-me@postgres:5432/geoeco}"
+      REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+      QUEUE_NAME: "${QUEUE_NAME:-geoeco}"
+      QUEUE_MAX_JOBS: "${QUEUE_MAX_JOBS:-20}"
+      RQ_DEFAULT_TIMEOUT: "${RQ_DEFAULT_TIMEOUT:-3600}"
+      RQ_ANALYSIS_TIMEOUT: "${RQ_ANALYSIS_TIMEOUT:-3600}"
+      RQ_COMPARISON_TIMEOUT: "${RQ_COMPARISON_TIMEOUT:-7200}"
+      RQ_REPORT_TIMEOUT: "${RQ_REPORT_TIMEOUT:-1200}"
+      STAC_API_URL: "${STAC_API_URL:-https://earth-search.aws.element84.com/v1}"
+      STAC_COLLECTION: "${STAC_COLLECTION:-sentinel-2-c1-l2a}"
+      STORAGE_ROOT: /data
+      RASTER_STORAGE_DIR: /data/rasters
+      REPORT_STORAGE_DIR: /data/reports
+      CACHE_STORAGE_DIR: /data/cache
+      TILE_CACHE_ENABLED: "${TILE_CACHE_ENABLED:-true}"
+      MAX_ZONE_AREA_SQ_KM: "${MAX_ZONE_AREA_SQ_KM:-5000}"
+      MAX_ANALYSIS_DAYS: "${MAX_ANALYSIS_DAYS:-140}"
+      MAX_CONCURRENT_ANALYSES: "${MAX_CONCURRENT_ANALYSES:-1}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - geoeco_rasters:/data/rasters
+      - geoeco_reports:/data/reports
+      - geoeco_cache:/data/cache
+      - geoeco_logs:/data/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      JOB_EXECUTION_MODE: rq
+      DATABASE_URL: "${DATABASE_URL:-postgresql+psycopg://geoeco:change-me@postgres:5432/geoeco}"
+      REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+      QUEUE_NAME: "${QUEUE_NAME:-geoeco}"
+      QUEUE_MAX_JOBS: "${QUEUE_MAX_JOBS:-20}"
+      RQ_DEFAULT_TIMEOUT: "${RQ_DEFAULT_TIMEOUT:-3600}"
+      RQ_ANALYSIS_TIMEOUT: "${RQ_ANALYSIS_TIMEOUT:-3600}"
+      RQ_COMPARISON_TIMEOUT: "${RQ_COMPARISON_TIMEOUT:-7200}"
+      RQ_REPORT_TIMEOUT: "${RQ_REPORT_TIMEOUT:-1200}"
+      STORAGE_ROOT: /data
+      RASTER_STORAGE_DIR: /data/rasters
+      REPORT_STORAGE_DIR: /data/reports
+      CACHE_STORAGE_DIR: /data/cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - geoeco_rasters:/data/rasters
+      - geoeco_reports:/data/reports
+      - geoeco_cache:/data/cache
+      - geoeco_logs:/data/logs
+    command: ["python", "-m", "app.worker"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; from redis import Redis; Redis.from_url(os.environ['REDIS_URL']).ping()"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-geoeco}"
+      POSTGRES_USER: "${POSTGRES_USER:-geoeco}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+    volumes:
+      - geoeco_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    volumes:
+      - geoeco_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  caddy_data:
+  caddy_config:
+  geoeco_db:
+  geoeco_redis:
+  geoeco_rasters:
+  geoeco_reports:
+  geoeco_cache:
+  geoeco_logs:

@@ -1,0 +1,211 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - complementary "Панель управления расчетом" [ref=e3]:
+      - generic [ref=e4]:
+        - heading "GeoEco Monitor" [level=1] [ref=e5]
+        - paragraph [ref=e6]: Публичный аналитический дашборд предварительной дистанционной оценки по Sentinel-2.
+      - generic [ref=e7]:
+        - generic [ref=e8]: Режим анализа
+        - generic "Режим анализа" [ref=e9]:
+          - button "Один год" [ref=e10] [cursor=pointer]
+          - button "2020 ↔ 2025" [ref=e11] [cursor=pointer]
+      - generic [ref=e12]:
+        - generic [ref=e13]: Территория анализа
+        - combobox "Территория анализа" [ref=e14]:
+          - option "Таганрогский залив"
+          - option "Ростов-на-Дону" [selected]
+          - option "Шахты и Восточный Донбасс"
+        - generic [ref=e15]: агломерационная зона
+      - generic [ref=e140]:
+        - generic [ref=e141]: Год слоя на карте
+        - combobox "Год слоя на карте" [ref=e142]:
+          - option "2020"
+          - option "2025" [selected]
+        - generic [ref=e143]: Parent comparison запускает два независимых child-расчета.
+      - button "Запустить сравнение" [ref=e144] [cursor=pointer]:
+        - img [ref=e145]
+        - text: Запустить сравнение
+      - generic [ref=e23]:
+        - generic [ref=e24]: Растровый слой
+        - generic "Переключатель растровых слоев" [ref=e25]:
+          - button "RGB" [ref=e26] [cursor=pointer]
+          - button "NDVI" [ref=e27] [cursor=pointer]
+          - button "NDWI" [ref=e28] [cursor=pointer]
+          - button "NDBI" [ref=e29] [cursor=pointer]
+        - generic [ref=e30]: Слои построены из live Sentinel-2 расчета.
+      - generic [ref=e31]:
+        - generic [ref=e32]: "Прозрачность слоя: 72%"
+        - 'slider "Прозрачность слоя: 72%" [ref=e33]': "0.7"
+      - generic [ref=e34]: Результат является предварительной дистанционной оценкой по спутниковым данным Sentinel-2 и не заменяет лабораторные измерения, санитарно-гигиеническую экспертизу и натурное обследование.
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - generic "Слои анализа" [ref=e37]:
+          - button "RGB" [ref=e38] [cursor=pointer]
+          - button "NDVI" [ref=e39] [cursor=pointer]
+          - button "NDWI" [ref=e40] [cursor=pointer]
+          - button "NDBI" [ref=e41] [cursor=pointer]
+        - generic [ref=e42]:
+          - button "К зоне" [ref=e43] [cursor=pointer]
+          - generic [ref=e44]: Методическая bbox-зона WGS84
+      - generic [ref=e45]: "На карте: 2025 · RGB · live Sentinel-2 tiles"
+      - generic [ref=e46]:
+        - region "Map" [ref=e150]
+        - group [ref=e151]:
+          - generic "Toggle attribution" [ref=e152] [cursor=pointer]
+          - generic [ref=e153]: Sentinel-2 L2A через Earth Search STAC
+    - complementary "Аналитическая панель" [ref=e47]:
+      - generic [ref=e48]:
+        - heading "Статус сравнения" [level=2] [ref=e154]:
+          - img [ref=e50]
+          - text: Статус сравнения
+        - generic [ref=e52]:
+          - generic [ref=e53]: Parent analysis
+          - strong [ref=e54]: готово
+          - generic [ref=e55]: 100% · сравнение готово
+        - generic [ref=e155]:
+          - generic [ref=e156]: Child job 2020
+          - strong [ref=e157]: готово
+          - generic [ref=e158]: 100% · готово
+        - generic [ref=e159]:
+          - generic [ref=e160]: Child job 2025
+          - strong [ref=e161]: готово
+          - generic [ref=e162]: 100% · готово
+        - generic [ref=e165]: запуск дочернего расчета 2020
+        - generic [ref=e168]: дочерний расчет 2020 готов
+        - generic [ref=e171]: запуск дочернего расчета 2025
+        - generic [ref=e174]: дочерний расчет 2025 готов
+        - generic [ref=e177]: сравнение готово
+      - generic [ref=e178]:
+        - heading "PDF-отчет" [level=2] [ref=e179]:
+          - img [ref=e180]
+          - text: PDF-отчет
+        - button "Сформировать PDF сравнения" [ref=e183] [cursor=pointer]:
+          - img [ref=e184]
+          - text: Сформировать PDF сравнения
+        - generic "Статус подготовки PDF" [ref=e187]:
+          - generic [ref=e190]: Ожидание команды
+          - generic [ref=e193]: Генерируем изображения слоев
+          - generic [ref=e196]: Отчет сравнения готов
+        - link "Скачать PDF" [ref=e328] [cursor=pointer]:
+          - /url: http://localhost:8001/api/reports/comparison/c3608de4-b365-4761-8afb-9a2467c68208.pdf
+          - img [ref=e329]
+          - text: Скачать PDF
+      - generic [ref=e197]:
+        - heading "Кратко по сравнению" [level=2] [ref=e198]:
+          - img [ref=e199]
+          - text: Кратко по сравнению
+        - generic [ref=e201]:
+          - generic [ref=e202]: Выбранный год на карте
+          - strong [ref=e203]: "2025"
+          - generic [ref=e204]: "Слой: RGB"
+        - generic [ref=e205]: NDVI снизился на 0.086
+        - generic [ref=e206]: NDBI вырос на 0.083
+        - generic [ref=e207]: "Класс изменился: напряженное -> проблемное"
+      - generic [ref=e59]:
+        - heading "Сцена Sentinel-2" [level=2] [ref=e60]:
+          - img [ref=e61]
+          - text: Сцена Sentinel-2
+        - generic [ref=e67]: "ID: S2A_T37TEN_20250829T082619_L2A"
+        - generic [ref=e68]: "Дата: 2025-08-29T08:27:10.176000Z"
+        - generic [ref=e69]: "Облачность: 0.0%"
+        - generic [ref=e70]: "Тайл: 37TEN"
+        - generic [ref=e71]: "Reference дата: 2025-08-29"
+        - generic [ref=e72]: "Reference тайл: 37TEN"
+        - generic [ref=e73]: "Кандидатов STAC: 37"
+        - generic [ref=e208]: Выбрана сцена, совпадающая с датой и тайлом дипломной reference-сцены.
+      - generic [ref=e74]:
+        - heading "Качество данных" [level=2] [ref=e75]:
+          - img [ref=e76]
+          - text: Качество данных
+        - generic [ref=e79]:
+          - generic [ref=e80]: Покрытие зоны сценой
+          - strong [ref=e81]: 100.0%
+          - generic [ref=e82]: "Площадь зоны: 504.7 км²"
+        - generic [ref=e83]:
+          - generic [ref=e84]: Валидные пиксели
+          - strong [ref=e85]: 100.0%
+          - generic [ref=e86]: "Маскированные пиксели: 0.0%"
+        - generic [ref=e87]:
+          - generic [ref=e88]: Облака и тени по SCL
+          - strong [ref=e89]: 0.0%
+          - generic [ref=e90]: "Nodata: 0.0%"
+        - generic [ref=e91]: "Облачность сцены: 0.0%"
+        - generic [ref=e92]: Критичных предупреждений по покрытию не выявлено.
+      - generic [ref=e93]:
+        - heading "Индексы и класс" [level=2] [ref=e94]:
+          - img [ref=e95]
+          - text: Индексы и класс
+        - generic [ref=e97]:
+          - generic [ref=e98]: NDVI, среднее значение
+          - strong [ref=e99]: "0.224"
+        - generic [ref=e100]:
+          - generic [ref=e101]: NDWI, среднее значение
+          - strong [ref=e102]: "-0.240"
+        - generic [ref=e103]:
+          - generic [ref=e104]: NDBI, среднее значение
+          - strong [ref=e105]: "0.008"
+        - generic [ref=e106]:
+          - generic [ref=e107]: Итоговый предварительный класс
+          - strong [ref=e108]: проблемное
+          - generic [ref=e109]: "Нормированная оценка: 0.222"
+      - generic [ref=e110]:
+        - heading "Интерпретация" [level=2] [ref=e111]
+        - paragraph [ref=e112]: Это предварительная дистанционная оценка по Sentinel-2. пониженный NDVI указывает на ослабленный растительный сигнал; положительный NDBI показывает вклад застроенных или нарушенных поверхностей. Результат следует использовать как зону внимания и основание для планирования натурной проверки.
+      - generic [ref=e113]:
+        - heading "Легенда слоя RGB" [level=2] [ref=e114]
+        - generic [ref=e115]:
+          - generic [ref=e118]: Натуральные цвета
+          - generic [ref=e121]: Валидные пиксели Sentinel-2
+    - generic [ref=e122]:
+      - generic [ref=e123]:
+        - generic [ref=e124]:
+          - generic [ref=e125]:
+            - img [ref=e126]
+            - text: Граница
+          - strong [ref=e130]: bbox методики WGS84
+        - generic [ref=e131]:
+          - generic [ref=e132]: Raw score
+          - strong [ref=e133]: "0.0500"
+        - generic [ref=e134]:
+          - generic [ref=e135]: Валидные пиксели
+          - strong [ref=e136]: 100.0%
+        - generic [ref=e137]:
+          - generic [ref=e138]: Источник
+          - strong [ref=e139]: Earth Search STAC / Sentinel-2 L2A
+      - generic [ref=e209]:
+        - generic [ref=e210]:
+          - heading "Сравнение 2020 ↔ 2025" [level=2] [ref=e211]:
+            - img [ref=e212]
+            - text: Сравнение 2020 ↔ 2025
+          - paragraph [ref=e214]: "Сравнение по спутниковым признакам показывает, что интегральный балл снизился. Наибольший вклад в изменение среди индексов дал показатель NDVI (изменение -0.086). Предварительный класс изменился: напряженное -> проблемное. Это предварительный дистанционный сигнал и зона внимания; он требует уточнения натурными и лабораторными данными."
+        - generic "Группированная диаграмма сравнения" [ref=e215]:
+          - generic [ref=e216]:
+            - generic [ref=e217]: NDVI
+            - generic [ref=e221]
+          - generic [ref=e224]:
+            - generic [ref=e225]: NDWI
+            - generic [ref=e229]
+          - generic [ref=e232]:
+            - generic [ref=e233]: NDBI
+            - generic [ref=e237]
+          - generic [ref=e240]:
+            - generic [ref=e241]: Нормированная оценка
+            - generic [ref=e245]
+        - table [ref=e249]:
+          - rowgroup [ref=e250]:
+            - row "Показатель 2020 2025 Δ % Тренд" [ref=e251]
+          - rowgroup [ref=e258]:
+            - row "NDVI 0.309 0.224 -0.086 -27.8% снижение" [ref=e259]
+            - row "NDWI -0.298 -0.240 0.058 19.4% рост" [ref=e266]
+            - row "NDBI -0.075 0.008 0.083 110.1% рост" [ref=e273]
+            - row "Raw score 0.106 0.050 -0.056 -52.9% снижение" [ref=e280]
+            - row "Нормированная оценка 0.482 0.222 -0.260 -54.0% снижение" [ref=e287]
+            - row "Валидные пиксели 100.0% 100.0% 0.000 0.0% стабильно" [ref=e294]
+            - row "Покрытие зоны 100.0% 100.0% 0.000 0.0% стабильно" [ref=e301]
+            - row "Предварительный класс напряженное проблемное — — изменился" [ref=e308]
+        - generic [ref=e315]:
+          - strong [ref=e316]: Значения дипломного reference-расчета
+          - generic [ref=e317]: Текущий live-расчет может отличаться из-за STAC ID, сцены, покрытия и версии обработки. Эти значения не подменяют live result.
+  - button "Open Next.js Dev Tools" [ref=e323] [cursor=pointer]:
+    - img [ref=e324]
+  - alert [ref=e327]
